@@ -597,6 +597,7 @@ Window {
                             echoMode: TextInput.Password
                             Layout.minimumWidth: 200
                             selectByMouse: true
+                            maximumLength: 8
                             property bool indicateError: false
                             onTextEdited: {
                                 indicateError = false

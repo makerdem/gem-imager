@@ -26,20 +26,29 @@ void WinFile::setFileName(const QString &name)
 
 bool WinFile::open(QIODevice::OpenMode mode)
 {
-    QByteArray n = _name.toLatin1();
+    std::wstring n = _name.toStdWString();
     DWORD dwordCreationDisposition {};
+    DWORD dwordAccessMode {};
+
+    if (mode == (QIODevice::ReadWrite | QIODevice::Unbuffered))
+    {
+        dwordCreationDisposition = CREATE_ALWAYS;
+        dwordAccessMode = GENERIC_READ | GENERIC_WRITE;
+    }
+    else if (mode == QIODevice::ReadOnly)
+    {
+        dwordCreationDisposition = OPEN_EXISTING;
+        dwordAccessMode = GENERIC_READ;
+    }
+    else
+    {
+        dwordCreationDisposition = OPEN_EXISTING;
+        dwordAccessMode = GENERIC_READ | GENERIC_WRITE;
+    }
 
     for (int attempt = 0; attempt < 20; attempt++)
     {
-        if(mode  == (QIODevice::ReadWrite | QIODevice::Unbuffered))
-        {
-            dwordCreationDisposition = CREATE_ALWAYS;
-        }
-        else
-        {
-            dwordCreationDisposition = OPEN_EXISTING;
-        }
-        _h = CreateFileA(n.data(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, dwordCreationDisposition, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+        _h = CreateFileW(n.c_str(), dwordAccessMode, FILE_SHARE_READ, NULL, dwordCreationDisposition, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
         if (_h != INVALID_HANDLE_VALUE)
             break;
 
@@ -49,7 +58,7 @@ bool WinFile::open(QIODevice::OpenMode mode)
 
     // Try with FILE_SHARE_WRITE
     if (_h == INVALID_HANDLE_VALUE)
-        _h = CreateFileA(n.data(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);;
+        _h = CreateFileW(n.c_str(), dwordAccessMode, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (_h == INVALID_HANDLE_VALUE)
     {

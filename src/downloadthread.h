@@ -150,7 +150,7 @@ protected:
     void _writeComplete();
     bool _verify();
     int _authopen(const QByteArray &filename);
-    bool _openAndPrepareDevice();
+    virtual bool _openAndPrepareDevice();
     void _writeCache(const char *buf, size_t len);
     qint64 _sectorsWritten();
     void _closeFiles();
@@ -179,6 +179,7 @@ protected:
     static QByteArray _proxy;
     static int _curlCount;
     bool _cancelled, _successful, _verifyEnabled, _cacheEnabled, _ejectEnabled;
+    bool _suppressSuccessSignal;  // For subclasses that want to emit success themselves
     time_t _lastModified, _serverTime, _lastFailureTime;
     QElapsedTimer _timer;
     int _inputBufferSize;

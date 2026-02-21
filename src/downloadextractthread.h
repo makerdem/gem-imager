@@ -32,6 +32,7 @@ public:
     virtual void extractMultiFileRun();
     virtual bool isImage();
     virtual void enableMultipleFileExtraction();
+    void waitForExtractThread();
 
 protected:
     char *_abuf[2];

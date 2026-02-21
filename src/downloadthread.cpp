@@ -46,6 +46,7 @@ DownloadThread::DownloadThread(const QByteArray &url, const QByteArray &localfil
 
     QSettings settings;
     _ejectEnabled = settings.value("eject", true).toBool();
+    _suppressSuccessSignal = false;
 }
 
 DownloadThread::~DownloadThread()
@@ -735,7 +736,7 @@ void DownloadThread::_writeComplete()
 
     emit finalizing();
 
-    if (!_config.isEmpty() || !_cmdline.isEmpty() || !_firstrun.isEmpty() || !_cloudinit.isEmpty())
+    if (!_config.isEmpty() || !_cmdline.isEmpty() || !_firstrun.isEmpty() || !_cloudinit.isEmpty() || !_geminit.isEmpty() || _destination == "uniflash")
     {
         if (!_customizeImage())
         {
@@ -795,7 +796,9 @@ void DownloadThread::_writeComplete()
 #endif
     }
 
-    emit success();
+    if (!_suppressSuccessSignal) {
+        emit success();
+    }
 }
 
 bool DownloadThread::_verify()
@@ -993,12 +996,16 @@ bool DownloadThread::_customizeImage()
         if (!_geminit.isEmpty() && _initFormat == "geminit")
         {
             fat->writeFile("config.ini", _geminit);
-            if(_destination == "uniflash"){
-                QByteArray uenv = fat->readFile("uEnv.txt");
-                uenv.replace("mmcblk1", "mmcblk0");
-                uenv.replace("bootpart=1:1", "bootpart=0:1");
-                fat->writeFile("uEnv.txt", uenv);
-            }
+        }
+        
+        // For uniflash mode, always modify uEnv.txt to use mmc0 (eMMC)
+        // This is needed regardless of whether geminit config was set
+        if(_destination == "uniflash"){
+            qDebug() << "Modifying uEnv.txt for" << _destination << "mode (mmc0/eMMC)";
+            QByteArray uenv = fat->readFile("uEnv.txt");
+            uenv.replace("mmcblk1", "mmcblk0");
+            uenv.replace("bootpart=1:1", "bootpart=0:1");
+            fat->writeFile("uEnv.txt", uenv);
         }
 
         if (!_cmdline.isEmpty())

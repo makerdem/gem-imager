@@ -119,6 +119,12 @@ void DownloadExtractThread::cancelDownload()
     _cancelExtract();
 }
 
+void DownloadExtractThread::waitForExtractThread()
+{
+    if (_extractThread)
+        _extractThread->wait();
+}
+
 // Raise exception on libarchive errors
 static inline void _checkResult(int r, struct archive *a)
 {
@@ -358,7 +364,12 @@ void DownloadExtractThread::extractMultiFileRun()
             emit cacheFileUpdated(computedHash);
         }
 
-        emit success();
+        // Don't emit success here for DfuThread - it will emit after DFU transfer completes
+        // Check if we're in DfuThread by checking if this is the actual type
+        // DfuThread will emit success() after completing the DFU transfer
+        if (!_suppressSuccessSignal) {
+            emit success();
+        }
     }
     catch (exception &e)
     {
